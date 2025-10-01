@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRON Radio Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(50px); }
+        }
+
+        @keyframes neonPulse {
+            0%, 100% { text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff; }
+            50% { text-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff, 0 0 40px #00ffff, 0 0 50px #00ffff; }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, inset 0 0 10px rgba(0,255,255,0.2); }
+            50% { box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 60px #00ffff, inset 0 0 20px rgba(0,255,255,0.4); }
+        }
+
+        @keyframes orangeGlow {
+            0%, 100% { box-shadow: 0 0 10px #ff6600, 0 0 20px #ff6600; }
+            50% { box-shadow: 0 0 20px #ff6600, 0 0 40px #ff6600, 0 0 60px #ff6600; }
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 2s linear infinite;
+            pointer-events: none;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 0;
+            padding: 40px;
+            box-shadow: 0 0 30px #00ffff, inset 0 0 30px rgba(0,255,255,0.1);
+            max-width: 1000px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ffff, #ff6600, #00ffff);
+            z-index: -1;
+            opacity: 0.3;
+            filter: blur(10px);
+        }
+
+        .radio-interface {
+            background: #000;
+            border: 2px solid #00ffff;
+            padding: 30px;
+            position: relative;
+        }
+
+        .circuit-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00ffff;
+        }
+
+        .circuit-corner.top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .circuit-corner.top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .circuit-corner.bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .circuit-corner.bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        .screen {
+            background: rgba(0, 20, 40, 0.8);
+            border: 2px solid #00ffff;
+            padding: 25px;
+            margin-bottom: 30px;
+            min-height: 200px;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,255,255,0.2);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #00ffff;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: #00ffff;
+            letter-spacing: 8px;
+            animation: neonPulse 2s ease-in-out infinite;
+        }
+
+        .timer {
+            font-size: 20px;
+            color: #ff6600;
+            font-weight: 700;
+            animation: orangeGlow 1.5s ease-in-out infinite;
+            padding: 5px 15px;
+            border: 2px solid #ff6600;
+            background: rgba(255, 102, 0, 0.1);
+        }
+
+        .timer.warning {
+            color: #ff0000;
+            border-color: #ff0000;
+            animation: orangeGlow 0.5s ease-in-out infinite;
+        }
+
+        .display-area {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .station-display {
+            font-size: 56px;
+            color: #00ffff;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+        }
+
+        .mode-display {
+            font-size: 18px;
+            color: #ff6600;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px #ff6600;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #00ffff;
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .status-item {
+            color: #00ffff;
+            font-size: 12px;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .status-value {
+            color: #ff6600;
+            font-weight: 700;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .ticker {
+            background: linear-gradient(90deg, rgba(0,255,255,0.2), rgba(0,255,255,0.4), rgba(0,255,255,0.2));
+            color: #00ffff;
+            padding: 15px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+            margin-top: 20px;
+            border: 2px solid #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        .ticker.error {
+            background: linear-gradient(90deg, rgba(255,0,0,0.2), rgba(255,0,0,0.4), rgba(255,0,0,0.2));
+            color: #ff0000;
+            border-color: #ff0000;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .control-btn {
+            background: rgba(0, 255, 255, 0.05);
+            border: 2px solid #00ffff;
+            padding: 20px;
+            color: #00ffff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(0, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .control-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .control-btn:hover {
+            box-shadow: 0 0 20px #00ffff, inset 0 0 20px rgba(0,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .control-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+            border-color: #004444;
+            color: #004444;
+        }
+
+        .control-btn.active {
+            border-color: #ff6600;
+            background: rgba(255, 102, 0, 0.2);
+            color: #ff6600;
+            box-shadow: 0 0 20px #ff6600, inset 0 0 20px rgba(255,102,0,0.3);
+        }
+
+        .slider-container {
+            grid-column: span 3;
+            background: rgba(0, 255, 255, 0.05);
+            border: 2px solid #00ffff;
+            padding: 20px;
+        }
+
+        .slider-label {
+            color: #00ffff;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .slider-value {
+            color: #ff6600;
+            text-shadow: 0 0 10px #ff6600;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(0, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+            position: relative;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #00ffff;
+            cursor: pointer;
+            box-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: #00ffff;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 15px #00ffff;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        .input-container {
+            grid-column: span 3;
+            background: rgba(0, 255, 255, 0.05);
+            border: 2px solid #00ffff;
+            padding: 20px;
+        }
+
+        .input-label {
+            color: #00ffff;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 20, 40, 0.8);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            outline: none;
+            text-transform: uppercase;
+        }
+
+        .text-input:focus {
+            box-shadow: 0 0 20px #00ffff, inset 0 0 10px rgba(0,255,255,0.2);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 102, 0, 0.2);
+            border: 2px solid #ff6600;
+            color: #ff6600;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px #ff6600, inset 0 0 20px rgba(255,102,0,0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #000;
+            border: 3px solid #00ffff;
+            padding: 50px;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 0 50px #00ffff, inset 0 0 30px rgba(0,255,255,0.2);
+            position: relative;
+        }
+
+        .modal-title {
+            font-size: 36px;
+            color: #00ffff;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            animation: neonPulse 2s ease-in-out infinite;
+        }
+
+        .modal-message {
+            font-size: 16px;
+            color: #fff;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+
+        .modal-phrase {
+            font-size: 22px;
+            color: #ff6600;
+            font-weight: 700;
+            background: rgba(255, 102, 0, 0.1);
+            padding: 25px;
+            border: 2px solid #ff6600;
+            margin: 20px 0;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px #ff6600;
+        }
+
+        .error-message {
+            color: #ff0000;
+            font-size: 13px;
+            margin-top: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .success-message {
+            color: #00ff00;
+            font-size: 13px;
+            margin-top: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .lockout-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 0, 0, 0.1);
+            border: 3px solid #ff0000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .lockout-overlay.active {
+            display: flex;
+        }
+
+        .lockout-message {
+            background: #000;
+            border: 2px solid #ff0000;
+            padding: 30px;
+            color: #ff0000;
+            font-size: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            box-shadow: 0 0 30px #ff0000;
+        }
+
+        .sequence-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .sequence-dot {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #00ffff;
+            background: rgba(0, 255, 255, 0.2);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        .sequence-dot.active {
+            background: #00ffff;
+            box-shadow: 0 0 10px #00ffff;
+        }
+
+        .task-counter {
+            color: #ff6600;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="radio-interface">
+            <div class="circuit-corner top-left"></div>
+            <div class="circuit-corner top-right"></div>
+            <div class="circuit-corner bottom-left"></div>
+            <div class="circuit-corner bottom-right"></div>
+
+            <div class="screen">
+                <div class="header">
+                    <div class="logo">◆ TRON ◆</div>
+                    <div class="timer" id="timer">25:00</div>
+                </div>
+
+                <div class="display-area">
+                    <div class="station-display" id="mainDisplay">88.5 FM</div>
+                    <div class="mode-display" id="modeDisplay">◆ RADIO MODE ◆</div>
+                </div>
+
+                <div class="status-grid" id="statusGrid"></div>
+
+                <div class="sequence-indicator" id="sequenceIndicator"></div>
+                <div class="task-counter" id="taskCounter">TASK 0/14 COMPLETE</div>
+
+                <div class="ticker" id="ticker">SYSTEM READY // AWAITING FIRST COMMAND</div>
+            </div>
+
+            <div class="controls" id="controls"></div>
+
+            <div class="lockout-overlay" id="lockoutOverlay">
+                <div class="lockout-message">
+                    ⚠ SYSTEM LOCKED ⚠<br>
+                    <span id="lockoutTimer">30</span>s
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <div class="modal-title">◆ ACCESS GRANTED ◆</div>
+            <div class="modal-message">
+                CHALLENGE PROTOCOL COMPLETE<br>
+                ALL SYSTEMS VALIDATED<br><br>
+                YOUR VERIFICATION PHRASE:
+            </div>
+            <div class="modal-phrase" id="finalPhrase"></div>
+            <div class="modal-message">
+                COMPLETION TIME: <span id="finalTime"></span><br>
+                STATUS: <span style="color: #00ff00;">APPROVED</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PHRASE = "THE REVOLUTION WILL NOT BE TELEVISED";
+        let currentTask = 0;
+        let startTime = Date.now();
+        let timerInterval;
+        let commandUnlocked1 = false;
+        let commandUnlocked2 = false;
+        let commandAttempts = 0;
+        let isLockedOut = false;
+        let helpDiscovered = false;
+
+        const state = {
+            volume: 5,
+            station: 88.5,
+            mode: 'FM',
+            bluetooth: false,
+            bass: 0,
+            treble: 0,
+            balance: 0,
+            darkMode: false,
+            preset: 0,
+            partyMode: false,
+            ecoMode: false,
+            sequenceStep: 0
+        };
+
+        const tasks = [
+            {
+                instruction: "SET VOLUME TO EXACTLY 8",
+                check: () => state.volume === 8,
+                hint: "Volume slider must be at 8"
+            },
+            {
+                instruction: "TUNE FM TO 95.3 AND ACTIVATE BLUETOOTH",
+                check: () => Math.abs(state.station - 95.3) < 0.01 && state.bluetooth === true && state.mode === 'FM',
+                hint: "Both FM 95.3 AND Bluetooth must be active"
+            },
+            {
+                instruction: "BASS +4 // TREBLE -1 // BALANCE CENTER",
+                check: () => state.bass === 4 && state.treble === -1 && state.balance === 0,
+                hint: "All three audio settings must match exactly"
+            },
+            {
+                instruction: "SAVE STATION 103.7 AS PRESET #2",
+                check: () => state.preset === 2 && Math.abs(state.station - 103.7) < 0.01,
+                hint: "First tune to 103.7, then set as preset 2"
+            },
+            {
+                instruction: "⚠ CHECKPOINT ALPHA // ANDRE COMMAND REQUIRED",
+                check: () => commandUnlocked1 === true,
+                hint: "Enter a valid ANDRE Method™ command",
+                isCommand: true,
+                checkpoint: 1
+            },
+            {
+                instruction: "VOLUME 3 // BASS -2 // SWITCH TO AUX",
+                check: () => state.volume === 3 && state.bass === -2 && state.mode === 'AUX',
+                hint: "All three actions required in any order",
+                locked: true
+            },
+            {
+                instruction: "ENABLE ECO MODE THEN PARTY MODE",
+                check: () => state.ecoMode === true && state.partyMode === true,
+                hint: "Both modes must be activated",
+                locked: true
+            },
+            {
+                instruction: "BALANCE LEFT +3 // TREBLE +2",
+                check: () => state.balance === -3 && state.treble === 2,
+                hint: "Left +3 means balance at -3",
+                locked: true
+            },
+            {
+                instruction: "TUNE TO 107.9 FM // SAVE AS PRESET #4",
+                check: () => Math.abs(state.station - 107.9) < 0.01 && state.preset === 4 && state.mode === 'FM',
+                hint: "Must be in FM mode, tune to 107.9, then save preset",
+                locked: true
+            },
+            {
+                instruction: "⚠ CHECKPOINT OMEGA // NEW ANDRE COMMAND REQUIRED",
+                check: () => commandUnlocked2 === true,
+                hint: "Enter a DIFFERENT ANDRE command than before",
+                isCommand: true,
+                checkpoint: 2
+            },
+            {
+                instruction: "SYSTEM LOCKED // FIND ASSISTANCE TO PROCEED",
+                check: () => helpDiscovered === true,
+                hint: "Try looking for help when you're stuck",
+                locked: true,
+                isHelp: true
+            },
+            {
+                instruction: "VOLUME 6 // BALANCE RIGHT +2 // BLUETOOTH OFF",
+                check: () => state.volume === 6 && state.balance === 2 && state.bluetooth === false,
+                hint: "Three precise settings required",
+                locked: true
+            },
+            {
+                instruction: "STATION 99.9 // PRESET #1 // PARTY MODE OFF",
+                check: () => Math.abs(state.station - 99.9) < 0.01 && state.preset === 1 && state.partyMode === false,
+                hint: "All three conditions must be met",
+                locked: true
+            },
+            {
+                instruction: "RESET AUDIO // BASS 0 // TREBLE 0 // BALANCE 0 // VOLUME 5",
+                check: () => state.bass === 0 && state.treble === 0 && state.balance === 0 && state.volume === 5,
+                hint: "All audio settings back to default",
+                locked: true
+            }
+        ];
+
+        const usedCommands = [];
+
+        function initSequenceIndicator() {
+            const container = document.getElementById('sequenceIndicator');
+            for (let i = 0; i < 14; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'sequence-dot';
+                dot.dataset.index = i;
+                container.appendChild(dot);
+            }
+        }
+
+        function updateSequenceIndicator() {
+            const dots = document.querySelectorAll('.sequence-dot');
+            dots.forEach((dot, index) => {
+                if (index < currentTask) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function updateStatusGrid() {
+            const grid = document.getElementById('statusGrid');
+            grid.innerHTML = `
+                <div class="status-item">
+                    <div>VOLUME</div>
+                    <div class="status-value">${state.volume}</div>
+                </div>
+                <div class="status-item">
+                    <div>BASS</div>
+                    <div class="status-value">${state.bass > 0 ? '+' : ''}${state.bass}</div>
+                </div>
+                <div class="status-item">
+                    <div>TREBLE</div>
+                    <div class="status-value">${state.treble > 0 ? '+' : ''}${state.treble}</div>
+                </div>
+                <div class="status-item">
+                    <div>BALANCE</div>
+                    <div class="status-value">${state.balance > 0 ? 'R+' : state.balance < 0 ? 'L+' : 'C'}${Math.abs(state.balance)}</div>
+                </div>
+                <div class="status-item">
+                    <div>PRESET</div>
+                    <div class="status-value">${state.preset || '--'}</div>
+                </div>
+                <div class="status-item">
+                    <div>MODE</div>
+                    <div class="status-value">${state.mode}</div>
+                </div>
+            `;
+        }
+
+        function updateTicker(message, isError = false) {
+            const ticker = document.getElementById('ticker');
+            ticker.textContent = message;
+            if (isError) {
+                ticker.classList.add('error');
+            } else {
+                ticker.classList.remove('error');
+            }
+        }
+
+        function updateTaskCounter() {
+            document.getElementById('taskCounter').textContent = `TASK ${currentTask}/14 COMPLETE`;
+        }
+
+        function checkTask() {
+            if (currentTask >= tasks.length || isLockedOut) return;
+            
+            const task = tasks[currentTask];
+            if (task.check()) {
+                currentTask++;
+                updateSequenceIndicator();
+                updateTaskCounter();
+                
+                if (currentTask < tasks.length) {
+                    const nextTask = tasks[currentTask];
+                    updateTicker(nextTask.instruction);
+                    if (currentTask === 5 || currentTask === 10) {
+                        unlockNextTier();
+                    }
+                    renderControls();
+                } else {
+                    // All tasks complete - show success
+                    showFinalInput();
+                }
+            }
+        }
+
+        function unlockNextTier() {
+            renderControls();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, 1500000 - elapsed);
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                const timerEl = document.getElementById('timer');
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (remaining < 300000 && !timerEl.classList.contains('warning')) {
+                    timerEl.classList.add('warning');
+                }
+                
+                if (remaining === 0) {
+                    clearInterval(timerInterval);
+                }
+            }, 1000);
+        }
+
+        function updateDisplay() {
+            const display = document.getElementById('mainDisplay');
+            const modeDisplay = document.getElementById('modeDisplay');
+            
+            if (state.mode === 'FM') {
+                display.textContent = `${state.station.toFixed(1)} FM`;
+            } else if (state.mode === 'AUX') {
+                display.textContent = '◆ AUX INPUT ◆';
+            } else if (state.mode === 'BLUETOOTH') {
+                display.textContent = '◆ BLUETOOTH ◆';
+            }
+            
+            let modeText = `◆ ${state.mode} MODE ◆`;
+            if (state.partyMode) modeText += ' // PARTY';
+            if (state.ecoMode) modeText += ' // ECO';
+            modeDisplay.textContent = modeText;
+            
+            updateStatusGrid();
+        }
+
+        function toggleBluetooth() {
+            state.bluetooth = !state.bluetooth;
+            updateDisplay();
+            renderControls();
+            checkTask();
+        }
+
+        function toggleEcoMode() {
+            state.ecoMode = !state.ecoMode;
+            updateDisplay();
+            renderControls();
+            checkTask();
+        }
+
+        function togglePartyMode() {
+            state.partyMode = !state.partyMode;
+            updateDisplay();
+            renderControls();
+            checkTask();
+        }
+
+        function setVolume(value) {
+            state.volume = parseInt(value);
+            document.getElementById('volumeValue').textContent = state.volume;
+            checkTask();
+        }
+
+        function setStation(value) {
+            state.station = parseFloat(parseFloat(value).toFixed(1));
+            document.getElementById('stationValue').textContent = state.station.toFixed(1);
+            updateDisplay();
+            updateStatusGrid();
+            checkTask();
+        }
+
+        function setBass(value) {
+            state.bass = parseInt(value);
+            document.getElementById('bassValue').textContent = (state.bass > 0 ? '+' : '') + state.bass;
+            checkTask();
+        }
+
+        function setTreble(value) {
+            state.treble = parseInt(value);
+            document.getElementById('trebleValue').textContent = (state.treble > 0 ? '+' : '') + state.treble;
+            checkTask();
+        }
+
+        function setBalance(value) {
+            state.balance = parseInt(value);
+            const display = state.balance > 0 ? 'R+' : state.balance < 0 ? 'L+' : 'C';
+            const absValue = Math.abs(state.balance);
+            const displayText = state.balance === 0 ? 'C' : display + absValue;
+            document.getElementById('balanceValue').textContent = displayText;
+            updateStatusGrid();
+            checkTask();
+        }
+
+        function showPresetDialog() {
+            const presetNum = prompt('◆ ENTER PRESET NUMBER (1-5):');
+            const num = parseInt(presetNum);
+            if (num >= 1 && num <= 5) {
+                state.preset = num;
+                updateStatusGrid();
+                updateTicker(`✓ PRESET ${num} SAVED: ${state.station.toFixed(1)} FM // CHECKING...`);
+                setTimeout(() => {
+                    checkTask();
+                }, 800);
+            }
+        }
+
+        function handleCommandKey(event) {
+            if (event.key === 'Enter') {
+                checkCommand();
+            }
+        }
+
+        function triggerLockout() {
+            isLockedOut = true;
+            const overlay = document.getElementById('lockoutOverlay');
+            overlay.classList.add('active');
+            
+            let countdown = 30;
+            const lockoutInterval = setInterval(() => {
+                countdown--;
+                document.getElementById('lockoutTimer').textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(lockoutInterval);
+                    isLockedOut = false;
+                    overlay.classList.remove('active');
+                    commandAttempts = 0;
+                    updateTicker(tasks[currentTask].instruction);
+                }
+            }, 1000);
+        }
+
+        function checkCommand() {
+            const input = document.getElementById('commandInput');
+            const errorDiv = document.getElementById('commandError');
+            const value = input.value.trim().toLowerCase();
+            
+            const validCommands = [
+                '/andre', '//andre', 'andre help', 'andre assist', 'hey andre',
+                '/help', '//help', 'show help',
+                '/focus', '//focus', 'help me prioritize',
+                '/clearpath', '//clearpath', 'break this down',
+                '/smartq', '//smartq', 'improve my prompt',
+                '/export', '//export', 'export this',
+                '/save', '//save', 'save progress'
+            ];
+            
+            if (validCommands.includes(value)) {
+                if (tasks[currentTask].checkpoint === 2 && usedCommands.includes(value)) {
+                    errorDiv.className = 'error-message';
+                    errorDiv.textContent = '✗ COMMAND ALREADY USED // ENTER DIFFERENT ANDRE COMMAND';
+                    commandAttempts++;
+                    if (commandAttempts >= 3) {
+                        triggerLockout();
+                    }
+                    return;
+                }
+                
+                usedCommands.push(value);
+                
+                if (tasks[currentTask].checkpoint === 1) {
+                    commandUnlocked1 = true;
+                } else if (tasks[currentTask].checkpoint === 2) {
+                    commandUnlocked2 = true;
+                }
+                
+                errorDiv.className = 'success-message';
+                errorDiv.textContent = '✓ COMMAND VERIFIED // ACCESS GRANTED';
+                setTimeout(() => {
+                    checkTask();
+                }, 1500);
+            } else {
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = '✗ INVALID COMMAND // TRY: /andre, /help, /focus, /clearpath, /smartq, /export, /save';
+                commandAttempts++;
+                
+                if (commandAttempts >= 3) {
+                    triggerLockout();
+                }
+            }
+        }
+
+        function handleHelpKey(event) {
+            if (event.key === 'Enter') {
+                checkHelp();
+            }
+        }
+
+        function checkHelp() {
+            const input = document.getElementById('helpInput');
+            const errorDiv = document.getElementById('helpError');
+            const value = input.value.trim().toLowerCase();
+            
+            const helpCommands = [
+                '/help', '//help', 'help', 'show help', 'what commands', 'show options', 'what can you do'
+            ];
+            
+            if (helpCommands.includes(value)) {
+                helpDiscovered = true;
+                errorDiv.className = 'success-message';
+                errorDiv.textContent = '✓ HELP SYSTEM ACCESSED // ANDRE PROTOCOLS AVAILABLE';
+                setTimeout(() => {
+                    checkTask();
+                }, 1500);
+            } else {
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = '✗ UNKNOWN INPUT // THINK: WHAT DO YOU DO WHEN STUCK?';
+            }
+        }
+
+        function showFinalInput() {
+            clearInterval(timerInterval);
+            const elapsed = Date.now() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('finalPhrase').textContent = PHRASE;
+            document.getElementById('finalTime').textContent = timeStr;
+            document.getElementById('successModal').classList.add('active');
+        }
+
+        function handleFinalKey(event) {
+            if (event.key === 'Enter') {
+                checkFinalPhrase();
+            }
+        }
+
+        function checkFinalPhrase() {
+            const input = document.getElementById('finalInput');
+            const errorDiv = document.getElementById('finalError');
+            const value = input.value.trim().toUpperCase();
+            
+            if (value === PHRASE) {
+                clearInterval(timerInterval);
+                const elapsed = Date.now() - startTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                document.getElementById('finalPhrase').textContent = PHRASE;
+                document.getElementById('finalTime').textContent = timeStr;
+                document.getElementById('successModal').classList.add('active');
+            } else {
+                errorDiv.textContent = '✗ INCORRECT PHRASE // VERIFY ALL TASKS COMPLETE';
+            }
+        }
+
+        function renderControls() {
+            const container = document.getElementById('controls');
+            const task = tasks[currentTask];
+            
+            if (task && task.isCommand) {
+                container.innerHTML = `
+                    <div class="input-container" style="grid-column: span 3;">
+                        <div class="input-label">◆ ENTER ANDRE COMMAND ◆</div>
+                        <input type="text" class="text-input" id="commandInput" 
+                               placeholder="TYPE COMMAND..." onkeypress="handleCommandKey(event)">
+                        <button class="submit-btn" onclick="checkCommand()">◆ SUBMIT COMMAND ◆</button>
+                        <div id="commandError" class="error-message"></div>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (task && task.isHelp) {
+                container.innerHTML = `
+                    <div class="input-container" style="grid-column: span 3;">
+                        <div class="input-label">◆ SYSTEM ASSISTANCE REQUIRED ◆</div>
+                        <input type="text" class="text-input" id="helpInput" 
+                               placeholder="ENTER COMMAND..." onkeypress="handleHelpKey(event)">
+                        <button class="submit-btn" onclick="checkHelp()">◆ REQUEST HELP ◆</button>
+                        <div id="helpError" class="error-message"></div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <button class="control-btn ${state.mode === 'FM' ? 'active' : ''}" 
+                        onclick="state.mode='FM'; updateDisplay(); checkTask();">FM RADIO</button>
+                <button class="control-btn ${state.mode === 'AUX' ? 'active' : ''}" 
+                        onclick="state.mode='AUX'; updateDisplay(); checkTask();">AUX INPUT</button>
+                <button class="control-btn ${state.bluetooth ? 'active' : ''}" 
+                        onclick="toggleBluetooth()">BLUETOOTH</button>
+                
+                <button class="control-btn" onclick="showPresetDialog()">SAVE PRESET</button>
+                <button class="control-btn ${state.ecoMode ? 'active' : ''}" 
+                        onclick="toggleEcoMode()">ECO MODE</button>
+                <button class="control-btn ${state.partyMode ? 'active' : ''}" 
+                        onclick="togglePartyMode()">PARTY MODE</button>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>◆ VOLUME</span>
+                        <span class="slider-value" id="volumeValue">${state.volume}</span>
+                    </div>
+                    <input type="range" class="slider" min="0" max="10" value="${state.volume}" 
+                           oninput="setVolume(this.value)">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>◆ FM STATION</span>
+                        <span class="slider-value" id="stationValue">${state.station.toFixed(1)}</span>
+                    </div>
+                    <input type="range" class="slider" min="88.0" max="108.0" step="0.1" value="${state.station}" 
+                           oninput="setStation(this.value)">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>◆ BASS</span>
+                        <span class="slider-value" id="bassValue">${state.bass > 0 ? '+' : ''}${state.bass}</span>
+                    </div>
+                    <input type="range" class="slider" min="-5" max="5" value="${state.bass}" 
+                           oninput="setBass(this.value)">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>◆ TREBLE</span>
+                        <span class="slider-value" id="trebleValue">${state.treble > 0 ? '+' : ''}${state.treble}</span>
+                    </div>
+                    <input type="range" class="slider" min="-5" max="5" value="${state.treble}" 
+                           oninput="setTreble(this.value)">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>◆ BALANCE</span>
+                        <span class="slider-value" id="balanceValue">${state.balance > 0 ? 'R+' : state.balance < 0 ? 'L+' : 'C'}${Math.abs(state.balance)}</span>
+                    </div>
+                    <input type="range" class="slider" min="-5" max="5" value="${state.balance}" 
+                           oninput="setBalance(this.value)">
+                </div>
+            `;
+        }
+
+        // Initialize
+        initSequenceIndicator();
+        renderControls();
+        updateDisplay();
+        startTimer();
+        updateTaskCounter();
+        updateTicker(tasks[0].instruction);
+    </script>
+</body>
+</html>
